@@ -2,44 +2,32 @@ package org.mock.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mock.DataProvider;
 import org.mock.persistence.entity.Player;
 import org.mock.persistence.entity.repository.PlayerRepositoryImpl;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.Mockito.*;
 
 import java.util.List;
 
+@ExtendWith(MockitoExtension.class)
 public class PlayerServiceImplTest {
 
-    // 1ero las dependencias
     @Mock
     private PlayerRepositoryImpl playerRepository;
 
-    // 2do clases a testear
     @InjectMocks
     private PlayerServiceImpl playerService;
-
-    @BeforeEach
-    void init() {
-        /* 1er metodo como se puede encontrar
-        this.playerRepository = mock(PlayerRepositoryImpl.class);
-        this.playerService = new PlayerServiceImpl(playerRepository);
-         */
-        MockitoAnnotations.openMocks(this);
-
-    }
 
     @Test
     public void testFindAll() {
         // Given
-        // PlayerRepositoryImpl playerRepository = mock(PlayerRepositoryImpl.class); // simular con mockito
-        // PlayerServiceImpl playerService = new PlayerServiceImpl(playerRepository);
 
         // When
         when(playerRepository.findAll()).thenReturn(DataProvider.playerListMock());
@@ -51,5 +39,54 @@ public class PlayerServiceImplTest {
         assertEquals("Lionel Messi", result.get(0).getName());
         assertEquals("Inter Miami", result.get(0).getTeam());
         assertEquals("Delantero", result.get(0).getPosition());
+        verify(this.playerRepository).findAll();
+    }
+
+    @Test
+    public void testFindById() {
+        // Given
+        Long id = 1L;
+
+        // When
+        when(this.playerRepository.findById(anyLong())).thenReturn(DataProvider.playerMock());
+        Player player = this.playerService.findById(id);
+
+        // Then
+        assertNotNull(player);
+        assertEquals("Lionel Messi", player.getName());
+        assertEquals("Inter Miami", player.getTeam());
+        assertEquals("Delantero", player.getPosition());
+        verify(this.playerRepository).findById(anyLong());
+    }
+
+    @Test
+    public void testSave() {
+        // Given
+        Player player = DataProvider.newPlayerMock();
+
+        // When
+        this.playerService.save(player);
+
+        // Then
+        ArgumentCaptor<Player> playerArgumentCaptor = ArgumentCaptor.forClass(Player.class);
+        verify(this.playerRepository).save(any(Player.class));
+        verify(this.playerRepository).save(playerArgumentCaptor.capture());
+        assertEquals(7L, playerArgumentCaptor.getValue().getId());
+        assertEquals("Luis Diaz", playerArgumentCaptor.getValue().getName());
+    }
+
+    @Test
+    public void testDeleteById() {
+        // Given
+        Long id = 1L;
+
+        // When
+        this.playerService.deleteById(id);
+
+        // Then
+        ArgumentCaptor<Long> longArgumentCaptor = ArgumentCaptor.forClass(Long.class);
+        verify(this.playerRepository).deleteById(anyLong());
+        verify(this.playerRepository).deleteById(longArgumentCaptor.capture());
+        assertEquals(1L, longArgumentCaptor.getValue());
     }
 }
